@@ -29,6 +29,15 @@ class TestesDijkstra(unittest.TestCase):
         with self.assertRaises(KeyError):
             dijkstra({"A": {}}, "Z")
 
+    def test_contraexemplo_negativo_documentado(self):
+        from contraexemplo import demonstrar_falha
+
+        self.assertEqual(demonstrar_falha(), {"A": 0, "B": 2, "C": 5, "D": 4})
+        with self.assertRaises(ValueError):
+            dijkstra(
+                {"A": {"B": 2, "C": 5}, "B": {"D": 2}, "C": {"B": -4}, "D": {}}, "A"
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

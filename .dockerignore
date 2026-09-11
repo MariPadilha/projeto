@@ -5,6 +5,13 @@ __pycache__
 .pytest_cache
 *.png
 *.html
-*.csv
 report.json
 relatorio.json
+relatorio.csv
+.venv
+.agents
+.codex
+.vscode
+.ruff_cache
+build
+resultados

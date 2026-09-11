@@ -1,6 +1,9 @@
+/* Referência complementar em C. A entrega principal é a implementação Python.
+ * Nesta matriz, zero significa ausência de aresta; não representa aresta de custo zero.
+ * A busca de posição no heap é linear: esta versão não tem decrease-key O(log V).
+ */
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <limits.h>
 
 #define TAM 10
@@ -8,15 +11,10 @@
 
 typedef struct Tabela_dijkstra {
     int visitado;
-    int vertice;
     int distancia;
-    int anterior;
 } Tabela_dijkstra;
 
 typedef struct Dijkstra {
-    int atual;
-    int distancia;
-    int n_visitados;
     Tabela_dijkstra *tabela;
 } Dijkstra;
 
@@ -44,42 +42,21 @@ typedef struct {
     Vertice *v;
 } Heap;
 
-void imprime_vetor(Vertice v[], int n) {
-    printf("Vetor =\n[ ");
-    for (int i = 0; i < n - 1; i++) {
-        printf("%d, ", v[i].valor);
-    }
-    printf("%d ]\n\n", v[n - 1].valor);
-}
-
-void imprime_heap(Vertice v[], int n) {
-    printf("Heap =\n");
-    int count = 1;
-    for (int i = 1; i <= n; i++) {
-        printf("%d ", v[i - 1].valor);
-        if (i == pow(2, count) - 1) {
-            printf("\n");
-            count++;
-        }
-    }
-    printf("\n\n");
-}
-
-int left(int i) {
+int filho_esquerdo(int i) {
     return 2 * i + 1;
 }
 
-int right(int i) {
+int filho_direito(int i) {
     return 2 * i + 2;
 }
 
-int parent(int i) {
+int pai(int i) {
     return (i - 1) / 2;
 }
 
-void min_heapify(Heap *h, int i) {
-    int l = left(i);
-    int r = right(i);
+void restaurar_heap_minimo(Heap *h, int i) {
+    int l = filho_esquerdo(i);
+    int r = filho_direito(i);
     int menor = i;
 
     if (l < h->tam_heap && h->v[l].distancia < h->v[i].distancia) {
@@ -89,20 +66,20 @@ void min_heapify(Heap *h, int i) {
         menor = r;
     }
     if (menor != i) {
-        Vertice temp = h->v[i];
+        Vertice temporario = h->v[i];
         h->v[i] = h->v[menor];
-        h->v[menor] = temp;
-        min_heapify(h, menor);
+        h->v[menor] = temporario;
+        restaurar_heap_minimo(h, menor);
     }
 }
 
-void build_min_heap(Heap *h) {
+void construir_heap_minimo(Heap *h) {
     for (int i = h->comprimento / 2 - 1; i >= 0; i--) {
-        min_heapify(h, i);
+        restaurar_heap_minimo(h, i);
     }
 }
 
-Vertice heap_pop(Heap *h) {
+Vertice extrair_minimo(Heap *h) {
     if (h->tam_heap <= 0) {
         printf("Heap vazia\n");
         exit(1);
@@ -111,21 +88,30 @@ Vertice heap_pop(Heap *h) {
     Vertice menor = h->v[0];
     h->v[0] = h->v[h->tam_heap - 1];
     h->tam_heap--;
-    min_heapify(h, 0);
+    restaurar_heap_minimo(h, 0);
     return menor;
 }
 
 Heap *inicia_heap_vertices(int n) {
-    Heap *h = (Heap *) malloc(sizeof(Heap));
+    Heap *h = malloc(sizeof(*h));
+    if (h == NULL) {
+        fputs("Falha ao alocar heap\n", stderr);
+        exit(EXIT_FAILURE);
+    }
     h->comprimento = n;
     h->tam_heap = n;
-    h->v = (Vertice *) malloc(sizeof(Vertice) * n);
+    h->v = malloc(sizeof(*h->v) * (size_t)n);
+    if (h->v == NULL) {
+        free(h);
+        fputs("Falha ao alocar vértices\n", stderr);
+        exit(EXIT_FAILURE);
+    }
 
     for (int i = 0; i < n; i++) {
         h->v[i].valor = i;
         h->v[i].distancia = (i == 0 ? 0 : INF);
     }
-    build_min_heap(h);
+    construir_heap_minimo(h);
     return h;
 }
 
@@ -138,21 +124,21 @@ int posicao_vertice(Heap *h, int vertice) {
     return -1;
 }
 
-void heap_decrease_key(Heap *h, int vertice, int nova_dist) {
+void diminuir_prioridade(Heap *h, int vertice, int nova_distancia) {
     int i = posicao_vertice(h, vertice);
     if (i == -1) {
         return;
     }
-    if (nova_dist >= h->v[i].distancia) {
+    if (nova_distancia >= h->v[i].distancia) {
         return;
     }
 
-    h->v[i].distancia = nova_dist;
-    while (i > 0 && h->v[parent(i)].distancia > h->v[i].distancia) {
-        Vertice temp = h->v[i];
-        h->v[i] = h->v[parent(i)];
-        h->v[parent(i)] = temp;
-        i = parent(i);
+    h->v[i].distancia = nova_distancia;
+    while (i > 0 && h->v[pai(i)].distancia > h->v[i].distancia) {
+        Vertice temporario = h->v[i];
+        h->v[i] = h->v[pai(i)];
+        h->v[pai(i)] = temporario;
+        i = pai(i);
     }
 }
 
@@ -160,36 +146,46 @@ void inicializa_tabela(Tabela_dijkstra *aux) {
     for (int i = 0; i < TAM; i++) {
         aux[i].distancia = (i == 0) ? 0 : INT_MAX;
         aux[i].visitado = 0;
-        aux[i].anterior = -1;
     }
 }
 
-Dijkstra *inicializa_dijkstra() {
-    Dijkstra *aux = (Dijkstra *) malloc(sizeof(Dijkstra));
-    aux->tabela = (Tabela_dijkstra *) malloc(sizeof(Tabela_dijkstra) * TAM);
+Dijkstra *inicializa_dijkstra(void) {
+    Dijkstra *aux = malloc(sizeof(*aux));
+    if (aux == NULL) {
+        fputs("Falha ao alocar estado\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+    aux->tabela = malloc(sizeof(*aux->tabela) * TAM);
+    if (aux->tabela == NULL) {
+        free(aux);
+        fputs("Falha ao alocar tabela\n", stderr);
+        exit(EXIT_FAILURE);
+    }
     inicializa_tabela(aux->tabela);
-    aux->atual = 0;
-    aux->n_visitados = TAM - 1;
-    aux->distancia = 0;
     return aux;
 }
 
-void dijkstra_com_heap() {
+void dijkstra_com_heap(void) {
     Dijkstra *aux = inicializa_dijkstra();
     Heap *heap = inicia_heap_vertices(TAM);
 
     while (heap->tam_heap > 0) {
-        Vertice u = heap_pop(heap);
-        int vertice_u = u.valor;
+        Vertice minimo = extrair_minimo(heap);
+        if (minimo.distancia == INF) {
+            break;
+        }
+        int vertice_u = minimo.valor;
         aux->tabela[vertice_u].visitado = 1;
 
         for (int v = 0; v < TAM; v++) {
             if (grafo[vertice_u][v] != 0 && !aux->tabela[v].visitado) {
-                int nova_dist = aux->tabela[vertice_u].distancia + grafo[vertice_u][v];
-                if (nova_dist < aux->tabela[v].distancia) {
-                    aux->tabela[v].distancia = nova_dist;
-                    aux->tabela[v].anterior = vertice_u;
-                    heap_decrease_key(heap, v, nova_dist);
+                if (aux->tabela[vertice_u].distancia > INF - grafo[vertice_u][v]) {
+                    continue;
+                }
+                int nova_distancia = aux->tabela[vertice_u].distancia + grafo[vertice_u][v];
+                if (nova_distancia < aux->tabela[v].distancia) {
+                    aux->tabela[v].distancia = nova_distancia;
+                    diminuir_prioridade(heap, v, nova_distancia);
                 }
             }
         }
@@ -206,7 +202,7 @@ void dijkstra_com_heap() {
     free(heap);
 }
 
-int main() {
+int main(void) {
     printf("Executando Dijkstra com min-heap:\n");
     dijkstra_com_heap();
     return 0;

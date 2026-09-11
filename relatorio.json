@@ -12,7 +12,7 @@
     ],
     "alcancavel": true,
     "vertices_expandidos": 9,
-    "tempo_execucao_ms": 0.0248,
+    "tempo_execucao_ms": 0.0241,
     "vertices": 10,
     "arestas": 26,
     "complexidade": "O(V² + E) (seleção linear do próximo vértice)"
@@ -30,7 +30,7 @@
     ],
     "alcancavel": true,
     "vertices_expandidos": 9,
-    "tempo_execucao_ms": 0.0138,
+    "tempo_execucao_ms": 0.0145,
     "vertices": 10,
     "arestas": 26,
     "complexidade": "O(V² + E) (seleção linear do próximo vértice)"
