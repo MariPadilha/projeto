@@ -1,0 +1,10 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+.pytest_cache
+*.png
+*.html
+*.csv
+report.json
+relatorio.json
