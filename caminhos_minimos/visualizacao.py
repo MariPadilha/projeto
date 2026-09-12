@@ -1,33 +1,21 @@
-"""Figuras de grafos e métricas; funcionam também sem interface gráfica."""
-
 from itertools import pairwise
 from math import isfinite
 from pathlib import Path
 from typing import Any
 
-from grafo import Grafo, validar_grafo
+import matplotlib
+import networkx as nx
 
+from caminhos_minimos.grafo import Grafo, validar_grafo
 
-def _carregar_bibliotecas():
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-        import networkx as nx
-    except ImportError as erro:
-        raise RuntimeError(
-            "instale as dependências: pip install -r requirements.txt"
-        ) from erro
-    return plt, nx
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 
 def desenhar_grafo(
     grafo: Grafo, caminho: list[str] | None = None, saida: str | Path = "grafo.png"
 ) -> None:
-    """Preserva vértices isolados e destaca em vermelho o caminho informado."""
     validar_grafo(grafo)
-    plt, nx = _carregar_bibliotecas()
     rede = nx.DiGraph()
     rede.add_nodes_from(grafo)
     for origem, vizinhos in grafo.items():
@@ -66,15 +54,12 @@ def desenhar_grafo(
 
 
 def desenhar_comparacao(resultados: list[dict[str, Any]], saida: str | Path) -> None:
-    """Compara custo, mediana do tempo e vértices fixados em uma consulta."""
-    plt, _ = _carregar_bibliotecas()
     nomes = [resultado["algoritmo"] for resultado in resultados]
     metricas = [
-        ("distancia", "Distância", "Custo"),
         ("tempo_execucao_ms", "Tempo mediano", "Milissegundos"),
-        ("vertices_expandidos", "Vértices fixados", "Quantidade"),
+        ("desvio_tempo_ms", "Desvio padrão do tempo", "Milissegundos"),
     ]
-    figura, eixos = plt.subplots(1, 3, figsize=(13, 4))
+    figura, eixos = plt.subplots(1, 2, figsize=(10, 4))
     try:
         for eixo, (campo, titulo, unidade) in zip(eixos, metricas, strict=True):
             valores = [resultado[campo] for resultado in resultados]

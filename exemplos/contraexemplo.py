@@ -1,10 +1,7 @@
-"""Demonstração deliberadamente sem validação; não integra o resolvedor."""
-
 from math import inf
 
 
-def demonstrar_falha() -> dict[str, int | float]:
-    """Executa a escolha gulosa em uma entrada fora das restrições de Dijkstra."""
+def demonstrar_falha_com_peso_negativo() -> dict[str, int | float]:
     grafo = {"A": {"B": 2, "C": 5}, "B": {"D": 2}, "C": {"B": -4}, "D": {}}
     distancias = dict.fromkeys(grafo, inf)
     distancias["A"] = 0
@@ -23,6 +20,6 @@ def demonstrar_falha() -> dict[str, int | float]:
 
 if __name__ == "__main__":
     print("Demonstração fora das restrições: A→B=2, A→C=5, C→B=-4, B→D=2")
-    print(f"Dijkstra sem validação: {demonstrar_falha()}")
+    print(f"Dijkstra sem validação: {demonstrar_falha_com_peso_negativo()}")
     print("Resultado correto: A=0, B=1, C=5, D=3 (caminho A→C→B→D).")
     print("O resolvedor do projeto rejeita essa entrada antes da busca.")

@@ -1,5 +1,3 @@
-"""Exportação de tabelas em JSON interoperável, CSV e HTML."""
-
 import csv
 import json
 from html import escape
@@ -8,23 +6,28 @@ from pathlib import Path
 from typing import Any
 
 
-def _normalizar(valor: Any) -> Any:
+def _normalizar_numeros_nao_finitos(valor: Any) -> Any:
     if isinstance(valor, float) and not isfinite(valor):
         return None
     if isinstance(valor, dict):
-        return {chave: _normalizar(item) for chave, item in valor.items()}
+        return {
+            chave: _normalizar_numeros_nao_finitos(item)
+            for chave, item in valor.items()
+        }
     if isinstance(valor, list):
-        return [_normalizar(item) for item in valor]
+        return [_normalizar_numeros_nao_finitos(item) for item in valor]
     return valor
 
 
 def exportar_relatorio(resultados: list[dict[str, Any]], caminho: str | Path) -> None:
-    """Representa distância infinita como null no JSON e inalcançável nas tabelas."""
     caminho = Path(caminho)
     if caminho.suffix.lower() == ".json":
         caminho.write_text(
             json.dumps(
-                _normalizar(resultados), ensure_ascii=False, indent=2, allow_nan=False
+                _normalizar_numeros_nao_finitos(resultados),
+                ensure_ascii=False,
+                indent=2,
+                allow_nan=False,
             )
             + "\n",
             encoding="utf-8",
@@ -34,8 +37,21 @@ def exportar_relatorio(resultados: list[dict[str, Any]], caminho: str | Path) ->
         dict.fromkeys(chave for resultado in resultados for chave in resultado)
     )
     linhas = []
-    for resultado in _normalizar(resultados):
+    for resultado in _normalizar_numeros_nao_finitos(resultados):
         linha = dict(resultado)
+        if "ordem_vertices" in linha:
+            linha["ordem_vertices"] = json.dumps(
+                linha["ordem_vertices"], ensure_ascii=False
+            )
+        if "distancias" in linha:
+            linha["distancias"] = (
+                "["
+                + ", ".join(
+                    "inalcançável" if distancia is None else str(distancia)
+                    for distancia in linha["distancias"]
+                )
+                + "]"
+            )
         if "caminho" in linha:
             linha["caminho"] = " → ".join(map(str, linha["caminho"]))
         if "distancia" in linha and linha["distancia"] is None:

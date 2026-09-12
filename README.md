@@ -3,9 +3,6 @@
 Trabalho de Teoria da Computação — Ciência da Computação.
 Implementação em **Python**, com Dijkstra e comparação complementar com A*.
 
-O [registro da revisão](REVISAO.md) descreve as correções, verificações executadas
-e limitações conhecidas do ambiente de teste.
-
 ## Integrantes
 
 | Integrante | Matrícula |
@@ -28,7 +25,7 @@ mas é mais caro.
 | Problema | Encontrar a menor distância de uma origem até cada vértice. |
 | Instância | Um grafo finito `G = (V, E)`, uma função de pesos `w` e uma origem `s ∈ V`. |
 | Entrada | Dicionário de adjacência ou arquivo JSON/CSV com pesos não negativos, mais a origem. |
-| Saída | Para cada `v ∈ V`, `δ(s,v)`, a menor soma dos pesos de um caminho de `s` até `v`. |
+| Saída | Vetor de distâncias mínimas da origem até todos os vértices, na ordem de inserção das chaves do grafo. |
 | Sem caminho | Infinito na API Python; `null` no relatório JSON; “inalcançável” no terminal e nas tabelas. |
 | Origem | Tem distância zero até si mesma, inclusive quando está isolada. |
 
@@ -66,10 +63,15 @@ o sistema operacional ainda podem variar. O núcleo dos algoritmos usa apenas
 a biblioteca padrão; Matplotlib e NetworkX são usados para gráficos, e NetworkX
 também fornece uma referência independente nos testes.
 
+No VS Code, use as extensões Python e Python Debugger, selecione o ambiente
+`.venv` e execute a configuração **Depurar caminhos mínimos** com F5.
+Ela chama `main.py` com `exemplos/grafo.json`, origem `0`, e salva o relatório
+em `resultados/distancias.json`. A descoberta de testes usa `pytest` em `tests/`.
+
 ### Resolver o enunciado: uma origem, todos os vértices
 
 ```bash
-python main.py grafo.json 0 --relatorio resultados/distancias.json
+python main.py exemplos/grafo.json 0 --relatorio resultados/distancias.json
 ```
 
 Distâncias esperadas:
@@ -78,28 +80,43 @@ Distâncias esperadas:
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Distância | 0 | 2 | 5 | 1 | 4 | 5 | 5 | 8 | 10 | 9 |
 
-A função equivalente é `dijkstra(grafo, origem)`, em `dijkstra.py`.
-Sem destino, o relatório contém uma linha para cada vértice.
+A função equivalente é `dijkstra(grafo, origem)`, em `caminhos_minimos/algoritmos.py`.
+Ela e `buscar(grafo, origem)` retornam uma lista com todas as distâncias definitivas:
 
-### Comparar Dijkstra e A* até um destino
+```python
+[0, 2, 5, 1, 4, 5, 5, 8, 10, 9]
+```
+
+A posição `i` corresponde ao vértice `list(grafo)[i]`; a ordem não é ordenada
+automaticamente pelo nome do vértice. A origem tem distância zero e vértices
+inalcançáveis recebem `math.inf`. O terminal mostra os vértices e o vetor nessa ordem.
+O relatório contém uma linha por algoritmo, com o vetor completo, a ordem dos
+vértices e as métricas de tempo. Sem destino, avalia somente Dijkstra.
+
+### Comparar o cálculo do vetor completo com Dijkstra e A*
 
 ```bash
-python main.py grafo.json 0 9 \
+python main.py exemplos/grafo.json 0 9 \
   --repeticoes 15 \
   --relatorio resultados/comparacao.json \
   --grafico resultados/grafo.png \
   --comparacao resultados/metricas.png
 ```
 
-O terminal continua mostrando **todas** as distâncias. Neste modo, o relatório
-contém duas linhas, uma por algoritmo, referentes à consulta `0 → 9`.
-Ambos retornam custo 9 e caminho `0 → 3 → 4 → 6 → 7 → 9`.
-As medições comparam consultas com o mesmo destino e parada antecipada;
-a execução completa de fonte única fica fora dessa medição.
+O terminal mostra **todas** as distâncias. Neste modo, o relatório contém duas
+linhas, uma por algoritmo, com o mesmo vetor completo. O destino `9` orienta a
+heurística do A*, mas a busca continua até esgotar os vértices alcançáveis.
+Todas as execuções medidas calculam o vetor inteiro a partir da mesma origem.
+Quando solicitado com `--grafico`, o caminho `0 → 3 → 4 → 6 → 7 → 9`, de custo 9,
+é reconstruído separadamente para destaque na imagem, fora da medição.
+`dijkstra_com_caminho()` e `a_estrela()` retornam o custo até esse destino,
+o caminho e a contagem de vértices fixados. O estado parcial dessas consultas
+fica interno. `buscar()`, `dijkstra()` e `a_estrela_distancias()` entregam o
+vetor completo; a avaliação usa as duas últimas funções.
 
 Use `python main.py --help` para listar as opções. A saída padrão é
-`relatorio.json`; um arquivo existente nesse caminho será substituído.
-Crie previamente a pasta de saída. As opções antigas `--report` e `--plot`
+`resultados/relatorio.json`; um arquivo existente nesse caminho será substituído.
+A pasta do relatório é criada automaticamente. Para as imagens, crie a pasta de saída previamente. As opções antigas `--report` e `--plot`
 continuam aceitas por compatibilidade, mas os exemplos usam português.
 
 ## Funcionamento e correção de Dijkstra
@@ -112,7 +129,7 @@ continuam aceitas por compatibilidade, mas os exemplos usam português.
 5. Repete até esgotar os alcançáveis. Na consulta a um destino, pode parar
    quando esse destino é fixado.
 
-Exemplo de `grafo.csv`, origem A (valores após o relaxamento):
+Exemplo de `exemplos/grafo.csv`, origem A (valores após o relaxamento):
 
 | Vértice fixado | d(A) | d(B) | d(C) | d(D) |
 |---|---:|---:|---:|---:|
@@ -148,7 +165,7 @@ invalidando o argumento anterior. Um peso negativo pode causar erro, mesmo
 sem um ciclo negativo; isso não significa que toda entrada negativa falhe.
 
 ```bash
-python contraexemplo.py
+python exemplos/contraexemplo.py
 ```
 
 Esse arquivo é uma demonstração deliberadamente incorreta fora das restrições.
@@ -206,8 +223,8 @@ restante) não basta para esta versão sem reabertura. Veja as
 [notas de busca informada da UC Berkeley](https://inst.eecs.berkeley.edu/~cs188/fa22/assets/notes/cs188-fa22-note02.pdf).
 
 Sem `--heuristica`, usa-se `h=0`, equivalente a Dijkstra, inclusive na ordem de
-visita com os mesmos empates. Pequenas diferenças de tempo são ruído de medição;
-não demonstram superioridade do A*. Ambos compartilham o núcleo de busca.
+visita com os mesmos empates. Pequenas diferenças de tempo não demonstram
+superioridade do A*. Ambos compartilham o núcleo de busca.
 
 Um exemplo didático com estimativas não nulas:
 
@@ -218,8 +235,11 @@ python main.py exemplos/desvios.json A D \
   --comparacao resultados/heuristica.png
 ```
 
-Nesse grafo, A* fixa 3 vértices e Dijkstra fixa 4; ambos encontram `A → C → D`,
-de custo 4. O arquivo de heurística contém estimativas para **esse destino D**:
+Na consulta isolada até D, `a_estrela()` fixa 3 vértices e
+`dijkstra_com_caminho()` fixa 4; ambos encontram `A → C → D`, de custo 4.
+Já a avaliação acima mede o vetor completo: `a_estrela_distancias()` continua
+após D, processando todos os vértices alcançáveis, assim como Dijkstra.
+O arquivo de heurística contém estimativas para **esse destino D**:
 `A=4, B=10, C=2, D=0`. Esses valores foram calculados manualmente para um exemplo
 pequeno e não representam o custo de construir uma heurística em uma aplicação
 real. Menos vértices fixados não garante menor tempo total, pois há validação
@@ -230,7 +250,7 @@ adicional. Com estimativa `O(1)` por vértice, ambos mantêm o limite
 
 ### Formatos
 
-JSON preferencial: objeto de adjacência, como `grafo.json`:
+JSON preferencial: objeto de adjacência, como `exemplos/grafo.json`:
 
 ```json
 {"A": {"B": 4, "C": 1}, "B": {"D": 1}, "C": {"B": 2, "D": 5}, "D": {}}
@@ -254,18 +274,18 @@ antigo `source,target,weight` continua aceito. A gravação usa português.
 
 | Dataset incluído | Características | Consulta sugerida |
 |---|---|---|
-| `grafo.json` | 10 vértices, 26 arcos; mesmo grafo da referência C | `0 → 9`, custo 9 |
-| `grafo.csv` | 4 vértices, 5 arcos; menos arestas não implica menor custo | `A → D`, custo 4 |
+| `exemplos/grafo.json` | 10 vértices, 26 arcos com pesos não negativos | `0 → 9`, custo 9 |
+| `exemplos/grafo.csv` | 4 vértices, 5 arcos; menos arestas não implica menor custo | `A → D`, custo 4 |
 | `exemplos/desvios.json` | 4 vértices; permite demonstrar orientação por heurística | `A → D`, custo 4 |
 | `exemplos/desconexo.json` | Aresta de custo zero e vértice isolado | `A → D`, inalcançável |
 
 `exemplos/heuristica_desvios.json` é uma tabela de estimativas, não um grafo.
 Os datasets são exemplos didáticos, não dados coletados de uma aplicação real.
 
-### Geração e experimentos reproduzíveis
+### Geração de datasets reproduzíveis
 
 ```bash
-python experimentos.py --saida resultados/experimentos --repeticoes 15 --semente 42
+python -m caminhos_minimos.gerar_dataset --saida resultados/datasets --semente 42
 ```
 
 Gera seis grafos: 10, 50 e 100 vértices, cada tamanho com probabilidade de aresta
@@ -274,89 +294,97 @@ aresta é sorteada independentemente; os pesos são inteiros de 1 a 100.
 A geração custa `O(V²)`, pode produzir grafos desconexos e não garante caminhos.
 A semente permite repetir os dados no mesmo ambiente Python.
 
-A pasta contém os seis datasets, relatórios consolidados JSON/CSV/HTML e
-`ambiente.json` com versão do Python, sistema e parâmetros. São comparadas as
-consultas de `0` até o último vértice. A* usa heurística zero nesses grafos.
+A pasta recebe os seis datasets em JSON. A saída padrão é `resultados/datasets`.
 O script cria a pasta de saída e substitui arquivos homônimos ao ser repetido.
-Para usar a geração diretamente: `GerenciadorDeDados.aleatorio(50, 0.2, 42)`;
-`salvar(grafo, caminho)` exporta JSON ou CSV.
+Para usar a geração diretamente, importe `gerar_grafo_aleatorio` de
+`caminhos_minimos.gerar_dataset` e chame `gerar_grafo_aleatorio(50, 0.2, 42)`.
+As funções de `caminhos_minimos.ler_salvar_grafos` cuidam dos arquivos:
+
+```python
+from caminhos_minimos.ler_salvar_grafos import carregar_grafo, salvar_grafo
+
+grafo = carregar_grafo("exemplos/grafo.json")
+salvar_grafo(grafo, "resultados/copia.csv")
+```
 
 ## Métricas, relatórios e visualização
 
 | Métrica/campo | Interpretação |
 |---|---|
-| `distancia`, `alcancavel`, `caminho` | Qualidade da solução, existência e sequência de vértices. |
-| `arestas_caminho` | Número de arestas do caminho; zero também ocorre quando não há caminho, então consulte `alcancavel`. |
-| `vertices_expandidos` | Vértices retirados para fixação; inclui origem e destino, mesmo que suas arestas não sejam examinadas. |
+| `distancias` | Vetor com as distâncias mínimas da origem até todos os vértices. |
+| `ordem_vertices` | Identifica o vértice correspondente a cada posição do vetor. |
 | `tempo_execucao_ms` | Mediana das execuções medidas, em milissegundos. |
 | `desvio_tempo_ms` | Desvio padrão populacional dos tempos, em milissegundos. |
 | `repeticoes`, `vertices`, `arestas` | Número de medições e tamanho da instância; arcos opostos contam separadamente. |
-| `origem`, `destino`, `conjunto_dados`, `heuristica` | Contexto da consulta; a heurística aparece nos relatórios de comparação. |
+| `origem`, `conjunto_dados` | Origem da busca completa e arquivo de entrada. |
+| `destino_heuristica`, `heuristica` | Referência usada para ordenar a busca completa do A*; aparece na comparação. |
 | `complexidade` | Limite teórico, não uma estimativa derivada do cronômetro. |
 
 Há uma execução de aquecimento por algoritmo e sete repetições por padrão.
-A ordem dos algoritmos alterna entre repetições. A medição inclui validação,
-cálculo da heurística e reconstrução do caminho; exclui leitura, impressão,
-exportação e gráficos. Uma tabela de heurística já carregada não inclui no
-tempo o esforço de produzi-la. Um único par por dataset é uma amostra limitada;
-para conclusões mais gerais, varie também sementes e pares de vértices.
+A ordem dos algoritmos alterna entre repetições. Cada chamada medida inclui
+validação, busca completa e construção do vetor de distâncias. Para A*, inclui
+também a avaliação e validação da heurística. Exclui leitura, impressão,
+exportação, gráficos e a consulta separada usada para destacar um caminho.
+Uma tabela de heurística já carregada não inclui no tempo o esforço de produzi-la.
+Para conclusões mais gerais, varie sementes, tamanhos dos grafos e origens.
 
-JSON mantém caminhos como listas e usa `null` para distância inalcançável.
-CSV e HTML apresentam o caminho como texto. O HTML escapa os dados de entrada.
+Uso direto da avaliação:
+
+```python
+from caminhos_minimos.algoritmos import dijkstra
+from caminhos_minimos.avaliacao import avaliar
+
+resultados = avaliar(grafo, origem, {"dijkstra": dijkstra}, repeticoes=7)
+```
+
+Cada função recebida deve aceitar `(grafo, origem)` e retornar uma lista com
+uma distância por vértice, na ordem das chaves do grafo. A avaliação verifica
+o formato e a estabilidade entre execuções; essa verificação não prova a
+correção matemática dos resultados.
+
+JSON mantém o vetor como lista e usa `null` para distância inalcançável.
+CSV e HTML apresentam o vetor como texto, com `inalcançável` nas posições sem
+caminho. O HTML escapa os dados de entrada.
 Para escolher o formato, altere a extensão:
 
 ```bash
-python main.py grafo.csv A D --relatorio resultados/comparacao.csv
-python main.py grafo.csv A D --relatorio resultados/comparacao.html
+python main.py exemplos/grafo.csv A D --relatorio resultados/comparacao.csv
+python main.py exemplos/grafo.csv A D --relatorio resultados/comparacao.html
 python main.py exemplos/desconexo.json A D --relatorio resultados/desconexo.json
 ```
 
 `--grafico` desenha o grafo, preserva isolados e destaca o caminho selecionado
-em vermelho. `--comparacao` gera barras de distância, tempo e vértices fixados.
+em vermelho. `--comparacao` gera barras de mediana e desvio padrão dos tempos
+de cálculo do vetor completo; também pode ser usado sem destino para Dijkstra.
 As imagens são salvas sem abrir uma janela; desenhos grandes podem ficar pouco
 legíveis. O custo do posicionamento visual não está incluído na complexidade
-de Dijkstra. Os arquivos `grafo.png`, `relatorio.json` e `report.json` na raiz
-são resultados anteriores preservados, com esquema/tempos da versão anterior;
-use `resultados/` para gerar a versão atual.
+de Dijkstra. Use `resultados/` para gerar relatórios e imagens.
 
 ## Docker
 
 ```bash
 docker build -t caminhos-minimos .
 docker run --rm --user "$(id -u):$(id -g)" -e MPLCONFIGDIR=/tmp/matplotlib \
-  -v "$(pwd):/app" caminhos-minimos grafo.json 0 \
+  -v "$(pwd):/app" caminhos-minimos exemplos/grafo.json 0 \
   --relatorio resultados/distancias.json
 docker run --rm --user "$(id -u):$(id -g)" -e MPLCONFIGDIR=/tmp/matplotlib \
-  -v "$(pwd):/app" caminhos-minimos grafo.csv A D \
+  -v "$(pwd):/app" caminhos-minimos exemplos/grafo.csv A D \
   --relatorio resultados/comparacao.json --comparacao resultados/metricas.png
-docker run --rm --entrypoint python caminhos-minimos -m pytest -q
 ```
 
 Esses exemplos usam um shell Linux/macOS e a pasta `resultados` criada na
 instalação. A opção `--user` evita criar relatórios pertencentes ao usuário
-root do contêiner. O Docker usa Python 3.11. Testes sem volume verificam os
-arquivos copiados para a imagem; reconstrua a imagem após alterar o código.
+root do contêiner. O Docker usa Python 3.11 e inclui apenas o programa, os
+exemplos e as dependências de execução. Reconstrua a imagem após alterar o código.
 
-## Arquivos complementares: C e MATLAB
+## Visualização complementar em MATLAB
 
-A entrega obrigatória é Python. `main.c` é uma referência complementar com
-matriz fixa de 10 vértices, origem 0 e heap mínimo; o grafo corresponde a
-`grafo.json`. Nesta matriz, **zero representa ausência de aresta**, portanto
-não serve para demonstrar pesos zero. A busca linear da posição no heap e a
-matriz tornam inadequado atribuir a ela o limite de uma implementação
-otimizada com heap indexado: generalizada, tem limite `O(V² + EV)`.
-
-```bash
-mkdir -p build/Debug
-gcc -std=c11 -Wall -Wextra -Wpedantic -g main.c -o build/Debug/outDebug
-./build/Debug/outDebug
-```
-
-`gerar_graficos_relatorio.m` é uma alternativa de visualização para
-**MATLAB R2020a ou posterior**. Recebe um relatório de comparação (duas linhas,
-com métricas), e não o relatório de todas as distâncias:
+`complementos/matlab/gerar_graficos_relatorio.m` é uma alternativa de visualização para
+**MATLAB R2020a ou posterior**. Recebe o relatório de avaliação do vetor completo,
+com uma linha por algoritmo e métricas de tempo:
 
 ```matlab
+addpath("complementos/matlab")
 gerar_graficos_relatorio("resultados/comparacao.json", "resultados/matlab")
 ```
 
@@ -365,30 +393,45 @@ a mesma comparação já pode ser gerada inteiramente em Python.
 
 ## Organização, limpeza e SOLID
 
+```text
+.
+├── caminhos_minimos/
+├── tests/
+├── exemplos/
+├── complementos/
+│   └── matlab/
+├── resultados/
+├── main.py
+├── README.md
+├── Dockerfile
+├── requirements.txt
+└── requirements-dev.txt
+```
+
+Execute os comandos a partir da raiz. Para usar a API Python, importe o pacote,
+por exemplo: `from caminhos_minimos.algoritmos import dijkstra`.
+
 | Arquivo | Responsabilidade |
 |---|---|
-| `main.py` | Argumentos, coordenação e mensagens do terminal. |
-| `grafo.py` | Tipos e validação pura das restrições. |
-| `algoritmos.py` | Núcleo compartilhado, predecessores e consultas com A*/Dijkstra. |
-| `dijkstra.py` | Interface que retorna todas as distâncias da fonte única. |
-| `dados.py` | Carregamento, gravação e geração de datasets. |
-| `avaliacao.py` | Medição de algoritmos recebidos como funções. |
-| `complexidade.py` | Textos dos limites teóricos usados nos relatórios. |
-| `relatorios.py` | Exportação das tabelas em três formatos. |
-| `visualizacao.py` | Desenho dos grafos e das métricas. |
-| `experimentos.py` | Experimentos com diferentes tamanhos e densidades. |
-| `contraexemplo.py` | Demonstração isolada da falha com peso negativo. |
-| `test_dijkstra.py`, `test_recursos.py` | Testes unitários e de integração. |
+| `main.py` | Ponto de entrada, argumentos, coordenação e mensagens do terminal. |
+| `caminhos_minimos/grafo.py` | Tipos e validação pura das restrições. |
+| `caminhos_minimos/algoritmos.py` | Núcleo compartilhado, predecessores e consultas com A*/Dijkstra. |
+| `caminhos_minimos/ler_salvar_grafos.py` | Leitura e gravação de grafos em arquivos JSON e CSV. |
+| `caminhos_minimos/avaliacao.py` | Medição de algoritmos recebidos como funções e textos dos limites teóricos usados nos relatórios. |
+| `caminhos_minimos/relatorios.py` | Exportação das tabelas em três formatos. |
+| `caminhos_minimos/visualizacao.py` | Desenho dos grafos e das métricas. |
+| `caminhos_minimos/gerar_dataset.py` | Geração e gravação de datasets de grafos aleatórios em JSON. |
+| `exemplos/contraexemplo.py` | Demonstração isolada da falha com peso negativo. |
+| `tests/test_dijkstra.py`, `tests/test_recursos.py` | Testes unitários e de integração. |
 | `requirements.txt`, `Dockerfile`, `.dockerignore` | Dependências e ambiente Docker. |
-| `requirements-dev.txt`, `ruff.toml` | Dependências e convenções para análise estática e formatação. |
+| `requirements-dev.txt` | Dependências para testes, análise estática e formatação. |
 | `.gitignore`, `.vscode/` | Exclusão de arquivos gerados e configuração opcional do editor. |
-| `main.c`, `gerar_graficos_relatorio.m` | Referência C e gráficos MATLAB opcionais. |
+| `complementos/matlab/gerar_graficos_relatorio.m` | Gráficos MATLAB opcionais. |
 
 Os nomes próprios do projeto usam português, `snake_case` e anotações de tipo.
 Nomes obrigatórios de bibliotecas e ferramentas (`main.py`, `test_`, `weight`,
-`Dockerfile`, `README.md`) seguem suas convenções. Os antigos módulos
-`algorithms`, `datasets`, `evaluation`, `reports`, `visualization` e `complexity`
-foram renomeados; código externo deve atualizar os imports.
+`Dockerfile`, `README.md`) seguem suas convenções. Os módulos da aplicação
+ficam no pacote `caminhos_minimos`.
 
 A separação de responsabilidades aplica **SRP**. A avaliação recebe funções
 com o mesmo contrato, permitindo acrescentar algoritmos sem alterar o medidor
@@ -401,14 +444,20 @@ proporcional ao trabalho acadêmico, com funções pequenas e contratos explíci
 ## Verificação e roteiro para apresentação
 
 ```bash
+python -m pip install -r requirements-dev.txt
 python -m pytest -q
 python -m unittest -q
 ```
 
 `pytest` executa toda a suíte. `unittest` executa apenas os testes de
-`test_dijkstra.py`; não substitui a verificação dos recursos adicionais.
-Para conferir a padronização, instale `requirements-dev.txt` e execute
-`ruff check .` e `ruff format --check .`.
+`tests/test_dijkstra.py`; não substitui a verificação dos recursos adicionais.
+Para verificar erros básicos e a formatação sem um arquivo de configuração, execute:
+
+```bash
+ruff check --isolated --select E4,E7,E9,F .
+ruff format --isolated --check .
+```
+
 Os testes abrangem casos normais e limites, formatos, heurísticas, terminal,
 gráficos e relatórios. Em grafos aleatórios, as distâncias são conferidas
 contra Bellman–Ford do NetworkX, que não é usado para resolver as consultas

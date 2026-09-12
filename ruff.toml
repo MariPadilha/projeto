@@ -1,6 +1,0 @@
-# Convenções de formatação e análise estática do projeto.
-target-version = "py310"
-line-length = 88
-
-[lint]
-select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM"]

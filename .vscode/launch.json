@@ -2,22 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Depurar referência em C",
-      "type": "cppdbg",
+      "name": "Depurar caminhos mínimos",
+      "type": "debugpy",
       "request": "launch",
-      "args": [],
-      "stopAtEntry": false,
-      "externalConsole": false,
+      "program": "${workspaceFolder}/main.py",
       "cwd": "${workspaceFolder}",
-      "program": "${workspaceFolder}/build/Debug/outDebug",
-      "MIMode": "gdb",
-      "miDebuggerPath": "gdb",
-      "setupCommands": [
-        {
-          "description": "Habilitar formatação legível no GDB",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
+      "console": "integratedTerminal",
+      "args": [
+        "exemplos/grafo.json",
+        "0",
+        "--relatorio",
+        "resultados/distancias.json"
       ]
     },
     {
