@@ -5,13 +5,12 @@ from math import inf
 from pathlib import Path
 
 from caminhos_minimos.algoritmos import (
-    a_estrela_distancias,
     dijkstra,
     dijkstra_com_caminho,
 )
-from caminhos_minimos.avaliacao import avaliar
 from caminhos_minimos.ler_salvar_grafos import carregar_grafo
-from caminhos_minimos.relatorios import exportar_relatorio
+from complementos.avaliacao import avaliar
+from complementos.relatorios import exportar_relatorio
 
 
 def criar_analisador() -> argparse.ArgumentParser:
@@ -48,6 +47,8 @@ def executar(argumentos: argparse.Namespace) -> None:
     caminho = None
     algoritmos = {"dijkstra": dijkstra}
     if argumentos.destino is not None:
+        from complementos.a_estrela import a_estrela_distancias
+
         algoritmo_a_estrela = partial(a_estrela_distancias, destino=argumentos.destino)
         if argumentos.heuristica:
             estimativas = json.loads(
@@ -77,7 +78,7 @@ def executar(argumentos: argparse.Namespace) -> None:
     Path(argumentos.relatorio).parent.mkdir(parents=True, exist_ok=True)
     exportar_relatorio(resultados, argumentos.relatorio)
     if argumentos.grafico:
-        from caminhos_minimos.visualizacao import desenhar_grafo
+        from complementos.visualizacao import desenhar_grafo
 
         if argumentos.destino is not None:
             _, caminho, _ = dijkstra_com_caminho(
@@ -85,7 +86,7 @@ def executar(argumentos: argparse.Namespace) -> None:
             )
         desenhar_grafo(grafo, caminho, argumentos.grafico)
     if argumentos.comparacao:
-        from caminhos_minimos.visualizacao import desenhar_comparacao
+        from complementos.visualizacao import desenhar_comparacao
 
         desenhar_comparacao(resultados, argumentos.comparacao)
     print(f"Distâncias mínimas a partir de {argumentos.origem}:")

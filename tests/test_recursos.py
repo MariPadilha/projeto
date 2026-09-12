@@ -10,16 +10,15 @@ import networkx as nx
 import pytest
 
 from caminhos_minimos.algoritmos import (
-    a_estrela,
-    a_estrela_distancias,
     dijkstra,
     dijkstra_com_caminho,
 )
-from caminhos_minimos.avaliacao import avaliar
-from caminhos_minimos.gerar_dataset import gerar_grafo_aleatorio
 from caminhos_minimos.ler_salvar_grafos import carregar_grafo, salvar_grafo
-from caminhos_minimos.relatorios import exportar_relatorio
-from caminhos_minimos.visualizacao import desenhar_comparacao, desenhar_grafo
+from complementos.a_estrela import a_estrela, a_estrela_distancias
+from complementos.avaliacao import avaliar
+from complementos.gerar_dataset import gerar_grafo_aleatorio
+from complementos.relatorios import exportar_relatorio
+from complementos.visualizacao import desenhar_comparacao, desenhar_grafo
 
 GRAFO = {"A": {"B": 4, "C": 1}, "B": {"D": 1}, "C": {"B": 2, "D": 5}, "D": {}}
 RAIZ = Path(__file__).resolve().parents[1]
@@ -223,7 +222,7 @@ def test_avaliacao_mede_vetor_completo_com_aquecimento_e_ordem_alternada(monkeyp
 
     instantes = iter([0, 0.001, 1, 1.002, 2, 2.004, 3, 3.003, 4, 4.005, 5, 5.006])
     monkeypatch.setattr(
-        "caminhos_minimos.avaliacao.perf_counter", lambda: next(instantes)
+        "complementos.avaliacao.perf_counter", lambda: next(instantes)
     )
     resultados = avaliar(GRAFO, "A", {"primeiro": primeiro, "segundo": segundo}, 3)
     chamadas_aquecimento = ["primeiro", "segundo"]
@@ -374,7 +373,7 @@ def test_terminal_fonte_unica_comparacao_e_erro(tmp_path):
 
 
 def test_gerar_dataset_salva_apenas_seis_grafos_aleatorios(tmp_path):
-    from caminhos_minimos.gerar_dataset import gerar_dataset
+    from complementos.gerar_dataset import gerar_dataset
 
     pasta_saida = tmp_path / "datasets"
     arquivos = gerar_dataset(pasta_saida, semente=42)

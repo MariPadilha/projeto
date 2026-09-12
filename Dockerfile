@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY main.py .
 COPY caminhos_minimos/ caminhos_minimos/
+COPY complementos/ complementos/
 COPY exemplos/ exemplos/
 
 ENTRYPOINT ["python", "main.py"]
