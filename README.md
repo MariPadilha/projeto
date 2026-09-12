@@ -1,6 +1,5 @@
 # Caminhos mínimos de fonte única com pesos não negativos
 
-Trabalho de Teoria da Computação — Ciência da Computação.
 Implementação em **Python**, com Dijkstra e comparação complementar com A*.
 
 ## Como executar com Docker
